@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Metadata;
 using Avalonia.Platform;
-
-#nullable enable
 
 namespace Avalonia.Controls
 {
@@ -13,7 +13,7 @@ namespace Avalonia.Controls
     /// </summary>
     public class Screens
     {
-        private readonly IScreenImpl _iScreenImpl;
+        private readonly IScreensImpl _iScreenImpl;
 
         /// <summary>
         /// Gets the total number of screens available on the device.
@@ -31,9 +31,15 @@ namespace Avalonia.Controls
         public Screen? Primary => All.FirstOrDefault(x => x.IsPrimary);
 
         /// <summary>
+        /// Event raised when any screen was added or removed.
+        /// </summary>
+        public event EventHandler? Changed;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Screens"/> class.
         /// </summary>
-        public Screens(IScreenImpl iScreenImpl)
+        [PrivateApi]
+        public Screens(IScreensImpl iScreenImpl)
         {
             _iScreenImpl = iScreenImpl;
         }
@@ -65,11 +71,27 @@ namespace Avalonia.Controls
         }
 
         /// <summary>
+        /// Retrieves a Screen for the display that contains the specified <see cref="TopLevel"/>.
+        /// </summary>
+        /// <param name="topLevel">The top level for which to retrieve the Screen.</param>
+        /// <exception cref="ObjectDisposedException">TopLevel platform implementation was already disposed.</exception>
+        /// <returns>The <see cref="Screen"/>.</returns>
+        public Screen? ScreenFromTopLevel(TopLevel topLevel)
+        {
+            if (topLevel.PlatformImpl is null)
+            {
+                throw new ObjectDisposedException("Window platform implementation was already disposed.");
+            }
+
+            return _iScreenImpl.ScreenFromTopLevel(topLevel.PlatformImpl);
+        }
+
+        /// <summary>
         /// Retrieves a Screen for the display that contains the specified <see cref="IWindowBaseImpl"/>.
         /// </summary>
         /// <param name="window">The window impl for which to retrieve the Screen.</param>
         /// <returns>The <see cref="Screen"/>.</returns>
-        [Obsolete("Use ScreenFromWindow(WindowBase) overload."), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Use ScreenFromWindow(WindowBase) overload.", true), EditorBrowsable(EditorBrowsableState.Never)]
         public Screen? ScreenFromWindow(IWindowBaseImpl window)
         {
             return _iScreenImpl.ScreenFromWindow(window);
@@ -97,5 +119,15 @@ namespace Avalonia.Controls
 
             return ScreenFromBounds(new PixelRect(tl, br));
         }
+
+        /// <summary>
+        /// Asks underlying platform to provide detailed screen information.
+        /// On some platforms it might include non-primary screens, as well as display names.
+        /// </summary>
+        /// <remarks>
+        /// This method is async and might show a dialog to the user asking for a permission.
+        /// </remarks>
+        /// <returns>True, if detailed screen information was provided. False, if denied by the platform or user.</returns>
+        public Task<bool> RequestScreenDetails() => _iScreenImpl.RequestScreenDetails();
     }
 }

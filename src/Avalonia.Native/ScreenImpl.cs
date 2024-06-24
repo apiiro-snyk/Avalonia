@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Avalonia.Native.Interop;
 using Avalonia.Platform;
 
 namespace Avalonia.Native
 {
-    internal class ScreenImpl : IScreenImpl, IDisposable
+    internal class ScreenImpl : IScreensImpl, IDisposable
     {
         private IAvnScreens _native;
 
@@ -43,10 +44,17 @@ namespace Avalonia.Native
             }
         }
 
+        public Action Changed { get; set; }
+
         public void Dispose ()
         {
             _native?.Dispose();
             _native = null;
+        }
+
+        public Screen ScreenFromTopLevel(ITopLevelImpl topLevel)
+        {
+            throw new NotImplementedException();
         }
 
         public Screen ScreenFromPoint(PixelPoint point)
@@ -58,6 +66,8 @@ namespace Avalonia.Native
         {
             return ScreenHelper.ScreenFromRect(rect, AllScreens);
         }
+
+        public Task<bool> RequestScreenDetails() => Task.FromResult(true);
 
         public Screen ScreenFromWindow(IWindowBaseImpl window)
         {
